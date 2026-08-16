@@ -30,5 +30,10 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/main.py": {
+      "maxDuration": 60
+    }
+  }
 }

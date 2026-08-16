@@ -10,7 +10,7 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["*"], allow_headers=["*"])
 
-PYTHON_API_URL = os.getenv("PYTHON_API_URL", "https://screen.cdqweb.com.br")
+PYTHON_API_URL = os.getenv("PYTHON_API_URL", "https://screen.cdqweb.com.br:6000")
 TIPOS_ACEITOS  = {"image/jpeg", "image/png", "image/webp"}
 
 
@@ -43,6 +43,6 @@ async def analisar(imagem: UploadFile = File(...)):
             raise HTTPException(502, f"Erro no servidor: {resp.text[:200]}")
         return JSONResponse(resp.json())
     except httpx.ConnectError:
-        raise HTTPException(503, "Servidor offline. Verifique screen.cdqweb.com.br")
+        raise HTTPException(503, "Servidor offline. Verifique screen.cdqweb.com.br:6000")
     except httpx.TimeoutException:
         raise HTTPException(504, "Tempo esgotado (90s).")

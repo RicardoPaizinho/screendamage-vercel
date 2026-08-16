@@ -72,7 +72,7 @@ def preprocessar(img_bgr):
 def carregar_modelo(caminho: str):
     ckpt = torch.load(caminho, map_location=DEVICE)
 
-    modelo = maskrcnn_resnet50_fpn(weights=None)
+    modelo = maskrcnn_resnet50_fpn(weights=None, weights_backbone=None)
     n      = ckpt["num_classes"]
 
     in_feat = modelo.roi_heads.box_predictor.cls_score.in_features
