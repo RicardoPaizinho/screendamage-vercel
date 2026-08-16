@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScreenCheck — Análise de Danos em Telas</title>
+  <style>
+    /* ── Reset & variáveis ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #161a24;
+      --surface2:  #1e2433;
+      --border:    #252d3d;
+      --blue:      #3b82f6;
+      --blue-dim:  #1e3a5f;
+      --green:     #22c55e;
+      --red:       #ef4444;
+      --yellow:    #f59e0b;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --radius:    12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ────────────────────────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-icon {
+      width: 30px; height: 30px;
+      background: var(--blue);
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+    }
+
+    .header-badge {
+      font-size: 0.7rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: var(--blue-dim);
+      color: var(--blue);
+      font-weight: 600;
+      letter-spacing: .04em;
+    }
+
+    /* ── Hero ──────────────────────────────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 56px 24px 40px;
+    }
+
+    .hero h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 12px;
+    }
+
+    .hero h1 span { color: var(--blue); }
+
+    .hero p {
+      font-size: 1rem;
+      color: var(--muted);
+      max-width: 480px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ── Main container ────────────────────────────────────────────────────── */
+    main {
+      flex: 1;
+      max-width: 860px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 24px 64px;
+    }
+
+    /* ── Drop zone ─────────────────────────────────────────────────────────── */
+    .upload-section { margin-bottom: 24px; }
+
+    .upload-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .upload-header label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+    }
+
+    #contador {
+      font-size: 0.78rem;
+      color: var(--muted);
+      background: var(--surface2);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    #drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 48px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      text-align: center;
+      position: relative;
+    }
+
+    #drop-zone:hover,
+    #drop-zone.drag-over {
+      border-color: var(--blue);
+      background: rgba(59,130,246,.04);
+    }
+
+    #drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .drop-icon {
+      width: 44px; height: 44px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      color: var(--blue);
+    }
+
+    .drop-icon svg { display: block; }
+
+    .drop-title {
+      font-size: .95rem;
+      font-weight: 600;
+    }
+
+    .drop-sub {
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    /* ── Preview grid ──────────────────────────────────────────────────────── */
+    #preview-area {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .preview-card {
+      position: relative;
+      aspect-ratio: 3/4;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .preview-card img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .btn-remover {
+      position: absolute;
+      top: 6px; right: 6px;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0,0,0,.6);
+      color: #fff;
+      font-size: .75rem;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      z-index: 2;
+      transition: background .15s;
+    }
+
+    .btn-remover:hover { background: var(--red); }
+
+    .preview-nome {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 5px 7px;
+      background: rgba(0,0,0,.6);
+      font-size: .65rem;
+      color: #cbd5e1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Botões ────────────────────────────────────────────────────────────── */
+    .acoes {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    #btn-analisar {
+      flex: 1;
+      padding: 13px 20px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity .2s;
+    }
+
+    #btn-analisar:hover  { opacity: .88; }
+    #btn-analisar:disabled { opacity: .4; cursor: not-allowed; }
+
+    #btn-limpar {
+      padding: 13px 18px;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      transition: color .2s, border-color .2s;
+    }
+
+    #btn-limpar:hover { color: var(--text); border-color: var(--muted); }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Resultados ────────────────────────────────────────────────────────── */
+    #result-area { margin-top: 32px; }
+
+    .resultado-titulo {
+      font-size: .75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .resultado-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 580px) {
+      .resultado-card { grid-template-columns: 1fr; }
+    }
+
+    .resultado-img-wrap {
+      position: relative;
+      background: #000;
+      aspect-ratio: 3/4;
+    }
+
+    @media (max-width: 580px) {
+      .resultado-img-wrap { aspect-ratio: 16/9; }
+    }
+
+    .resultado-img-wrap img {
+      width: 100%; height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .canvas-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .resultado-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .resultado-nome {
+      font-size: .78rem;
+      color: var(--muted);
+      word-break: break-all;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      width: fit-content;
+    }
+
+    .badge-ok   { background: rgba(34,197,94,.12);  color: var(--green);  }
+    .badge-dano { background: rgba(239,68,68,.12);   color: var(--red);    }
+    .badge-nd   { background: rgba(245,158,11,.12);  color: var(--yellow); }
+    .badge-erro { background: rgba(239,68,68,.08);   color: var(--red);    }
+
+    /* Barra de confiança */
+    .confianca-wrap { display: flex; flex-direction: column; gap: 5px; }
+
+    .confianca-label {
+      font-size: .72rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .confianca-label span:last-child { color: var(--text); font-weight: 600; }
+
+    .barra-bg {
+      height: 6px;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .barra-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width .5s ease;
+    }
+
+    .barra-fill.badge-ok   { background: var(--green); }
+    .barra-fill.badge-dano { background: var(--red);   }
+    .barra-fill.badge-nd   { background: var(--yellow);}
+
+    .resultado-msg {
+      font-size: .82rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .erro-txt { color: #fca5a5; }
+
+    .link-blob {
+      font-size: .75rem;
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    .link-blob:hover { text-decoration: underline; }
+
+    /* ── Toast ─────────────────────────────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: .85rem;
+      transition: transform .3s;
+      pointer-events: none;
+      z-index: 999;
+      white-space: nowrap;
+    }
+
+    .toast.show            { transform: translateX(-50%) translateY(0); }
+    .toast.toast-erro      { border-color: var(--red);    color: #fca5a5; }
+    .toast.toast-aviso     { border-color: var(--yellow); color: #fde68a; }
+
+    /* ── Footer ────────────────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: .72rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="white" stroke-width="1.5"/>
+        <path d="M4 8.5L6.5 11L12 6" stroke="white" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    ScreenCheck
+  </div>
+  <span class="header-badge">BETA</span>
+</header>
+
+<section class="hero">
+  <h1>Análise de danos em<br/><span>telas de smartphone</span></h1>
+  <p>Envie até 3 fotos para identificar quebras, trincos, riscos e pixels mortos usando IA.</p>
+</section>
+
+<main>
+
+  <div class="upload-section">
+    <div class="upload-header">
+      <label>Selecione as imagens</label>
+      <span id="contador">0/3</span>
+    </div>
+
+    <div id="drop-zone">
+      <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" multiple
+             aria-label="Selecionar imagens da tela do smartphone para análise" />
+      <div class="drop-icon">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M10 13V4M10 4L7 7M10 4L13 7"
+                stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3 13v2.5A1.5 1.5 0 004.5 17h11A1.5 1.5 0 0017 15.5V13"
+                stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <p class="drop-title">Arraste fotos aqui ou clique para selecionar</p>
+      <p class="drop-sub">JPG, PNG ou WEBP · máximo 3 imagens · até 10MB cada</p>
+    </div>
+
+    <div id="preview-area"></div>
+
+    <div class="acoes">
+      <button id="btn-analisar" disabled>Analisar</button>
+      <button id="btn-limpar">🗑 Limpar</button>
+    </div>
+  </div>
+
+  <div id="result-area"></div>
+
+</main>
+
+<footer>
+  As imagens são analisadas com IA e armazenadas temporariamente para fins de diagnóstico.
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
