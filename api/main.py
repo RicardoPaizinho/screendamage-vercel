@@ -10,7 +10,7 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["*"], allow_headers=["*"])
 
-PYTHON_API_URL = os.getenv("PYTHON_API_URL", "https://screen.cdqweb.com.br:6000")
+PYTHON_API_URL = os.getenv("PYTHON_API_URL", "https://screen.cdqweb.com.br")
 TIPOS_ACEITOS  = {"image/jpeg", "image/png", "image/webp"}
 
 
