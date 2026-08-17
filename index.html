@@ -405,17 +405,76 @@
       line-height: 1.5;
     }
 
+
     .erro-txt { color: #fca5a5; }
 
-    .link-blob {
-      font-size: .75rem;
-      color: var(--blue);
-      text-decoration: none;
+    /* Zoom hint */
+    .preview-card img { cursor: zoom-in; }
+    .zoom-hint {
+      position: absolute; bottom: 28px; right: 6px;
+      font-size: .85rem; opacity: 0; transition: opacity .2s; pointer-events: none;
+    }
+    .resultado-img-wrap:hover .zoom-hint { opacity: 1; }
+
+    /* Botão retentar */
+    .btn-retentar {
+      padding: 7px 14px; background: transparent; color: var(--blue);
+      border: 1px solid var(--blue); border-radius: 8px; font-size: .8rem;
+      font-weight: 600; cursor: pointer; width: fit-content; transition: background .15s;
+    }
+    .btn-retentar:hover { background: rgba(59,130,246,.1); }
+
+    /* Mini spinner inline */
+    .mini-spin {
+      display: inline-block; width: 10px; height: 10px;
+      border: 2px solid rgba(245,158,11,.3); border-top-color: var(--yellow);
+      border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle;
     }
 
-    .link-blob:hover { text-decoration: underline; }
+    /* Modal de zoom */
+    #zoom-modal {
+      display: none; position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,.92); flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    #zoom-modal-header {
+      position: absolute; top: 0; left: 0; right: 0; padding: 12px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(0,0,0,.75), transparent); z-index: 10;
+    }
+    #zoom-titulo {
+      font-size: .85rem; color: #fff; font-weight: 600;
+      max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .zoom-close {
+      background: rgba(255,255,255,.15); border: none; color: #fff;
+      width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+      font-size: 1rem; display: grid; place-items: center;
+    }
+    .zoom-close:hover { background: rgba(255,255,255,.3); }
+    #zoom-modal-scroll {
+      overflow: auto; max-width: 95vw; max-height: 85vh;
+      display: flex; align-items: center; justify-content: center; cursor: grab;
+    }
+    #zoom-modal-scroll:active { cursor: grabbing; }
+    #zoom-img {
+      display: block; max-width: 90vw; max-height: 80vh; object-fit: contain;
+      transform-origin: center center; transition: transform .15s ease; border-radius: 6px;
+    }
+    #zoom-modal-footer {
+      position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(0,0,0,.65); padding: 6px 14px; border-radius: 999px;
+    }
+    .zoom-footer-btn {
+      background: rgba(255,255,255,.15); border: none; color: #fff;
+      padding: 4px 14px; border-radius: 999px; cursor: pointer;
+      font-size: .8rem; font-weight: 600;
+    }
+    .zoom-footer-btn:hover { background: rgba(255,255,255,.3); }
+    #zoom-pct { font-size: .8rem; color: #fff; min-width: 44px; text-align: center; }
 
-    /* ── Toast ─────────────────────────────────────────────────────────────── */
+    /* Toast */ ─────────────────────────────────────────────────────────────── */
     .toast {
       position: fixed;
       bottom: 24px;
@@ -506,6 +565,24 @@
 <footer>
   As imagens são analisadas com IA e armazenadas temporariamente para fins de diagnóstico.
 </footer>
+
+
+<!-- Modal de zoom -->
+<div id="zoom-modal">
+  <div id="zoom-modal-header">
+    <span id="zoom-titulo"></span>
+    <button class="zoom-close" onclick="fecharZoom()">✕</button>
+  </div>
+  <div id="zoom-modal-scroll">
+    <img id="zoom-img" src="" alt="Imagem ampliada" />
+  </div>
+  <div id="zoom-modal-footer">
+    <button class="zoom-footer-btn" onclick="ajustarZoomModal(-0.25)">−</button>
+    <span id="zoom-pct">100%</span>
+    <button class="zoom-footer-btn" onclick="ajustarZoomModal(0.25)">+</button>
+    <button class="zoom-footer-btn" onclick="resetZoomModal()">1:1</button>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
